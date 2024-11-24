@@ -6,16 +6,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Set;
+
 @Entity
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(name = "users")
-public class User {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class User extends Base {
 
     @Column(unique = true, nullable = false)
     private String email;
@@ -24,4 +23,9 @@ public class User {
     @Column(nullable = false)
     private String password;
 
+    @ManyToMany
+    private Set<Post> likedPosts;
+
+    @ManyToMany
+    private Set<Post> savedPosts;
 }
