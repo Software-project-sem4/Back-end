@@ -16,9 +16,9 @@ public class File extends Base {
     private String fileName;
 
     @Column(nullable = false)
-    private String fileUrl;
+    private byte[] fileData;
 
-    @ManyToOne
-    @JoinColumn
+    @ManyToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "post_id", nullable = false)
     private Post post;
 }

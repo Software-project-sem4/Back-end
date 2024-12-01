@@ -2,7 +2,7 @@ package com.software.software_project_sem4.service;
 
 import com.software.software_project_sem4.dto.AuthReqDto;
 import com.software.software_project_sem4.dto.UserReqDto;
-import com.software.software_project_sem4.dto.AuthRespDto;
+import com.software.software_project_sem4.dto.StatusRespDto;
 import com.software.software_project_sem4.exception.UnauthorizedException;
 import com.software.software_project_sem4.exception.ValidationException;
 import com.software.software_project_sem4.model.User;
@@ -10,9 +10,6 @@ import com.software.software_project_sem4.repository.UserRepo;
 import com.software.software_project_sem4.security.PasswordEncoder;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
-import org.modelmapper.ModelMapper;
-import org.modelmapper.PropertyMap;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -27,7 +24,7 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public AuthRespDto login(AuthReqDto dto, HttpServletRequest request) {
+    public StatusRespDto login(AuthReqDto dto, HttpServletRequest request) {
         Optional<User> user = userRepo.findByEmail(dto.getEmail());
         boolean matched = false;
 
@@ -42,48 +39,36 @@ public class AuthService {
         HttpSession session = request.getSession();
         session.setAttribute("user_id", user.get().getId());
 
-        AuthRespDto authRespDto = new AuthRespDto();
-        authRespDto.setSuccess(true);
-        return authRespDto;
+        StatusRespDto statusRespDto = new StatusRespDto();
+        statusRespDto.setSuccess(true);
+        return statusRespDto;
     }
 
-    public AuthRespDto signup(UserReqDto dto) {
-       Boolean userExisted =  this.userRepo.existsByEmail(dto.getEmail()) || this.userRepo.existsByUserName(dto.getUserName());
-       if(userExisted) {
-           throw new ValidationException("User already exists");
-       }
+    public StatusRespDto signup(UserReqDto dto) {
+        boolean userExisted = this.userRepo.existsByEmail(dto.getEmail()) || this.userRepo.existsByUserName(dto.getUserName());
+        if (userExisted) {
+            throw new ValidationException("User already exists");
+        }
         String passwordHash = passwordEncoder.bCrypt().encode(dto.getPassword());
-        ModelMapper modelMapper = new ModelMapper();
-        modelMapper.addMappings(new PropertyMap<UserReqDto, User>() {
-            @Override
-            protected void configure() {
-                map().setPassword(passwordHash);
-            }
-        });
+        User user = new User();
+        user.setEmail(dto.getEmail());
+        user.setUserName(dto.getUserName());
+        user.setPassword(passwordHash);
 
-//       1: code chay
-//       User user = new User();
-//       user.setEmail(dto.getEmail());
-//       user.setUserName(dto.getUserName());
-//       user.setPassword(passwordHash);
+        this.userRepo.save(user);
 
-
-//      2: Mappers
-        User user = modelMapper.map(dto, User.class);
-       this.userRepo.save(user);
-
-        AuthRespDto authRespDto = new AuthRespDto();
-        authRespDto.setSuccess(true);
-        return authRespDto;
+        StatusRespDto statusRespDto = new StatusRespDto();
+        statusRespDto.setSuccess(true);
+        return statusRespDto;
     }
 
-    public AuthRespDto logout(HttpServletRequest request) {
+    public StatusRespDto logout(HttpServletRequest request) {
 
         HttpSession session = request.getSession();
         session.setAttribute("user_id", null);
 
-        AuthRespDto authRespDto = new AuthRespDto();
-        authRespDto.setSuccess(true);
-        return authRespDto;
+        StatusRespDto statusRespDto = new StatusRespDto();
+        statusRespDto.setSuccess(true);
+        return statusRespDto;
     }
 }
