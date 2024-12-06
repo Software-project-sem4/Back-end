@@ -1,4 +1,4 @@
-FROM ubuntu:20.04 AS build
+FROM gradle:jdk21-jammy AS build
 RUN apt-get update
 RUN apt-get install openjdk-21-jdk -y
 COPY . .
