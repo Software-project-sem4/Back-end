@@ -1,10 +1,8 @@
 FROM gradle:jdk21-jammy AS build
-RUN apt-get update
-RUN apt-get install openjdk-21-jdk -y
-COPY . .
-RUN ./gradlew bootJar --no-daemon
+COPY --chown=gradle:gradle . /home/gradle/src
+WORKDIR /home/gradle/src
+RUN gradle build -x test --no-daemon
 
-FROM openjdk:21-jdk-slim
-EXPOSE 8080
-COPY --from=build ./build/libs/software_project_sem4-0.0.1-SNAPSHOT.jar app.jar
-ENTRYPOINT ["java", "-jar", "app.jar"]
+FROM eclipse-temurin:21-jdk-jammy
+COPY --from=build /home/gradle/src/build/libs/software_project_sem4-0.0.1-SNAPSHOT.jar app.jar
+ENTRYPOINT ["java","-jar","app.jar"]
