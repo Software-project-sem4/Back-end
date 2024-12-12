@@ -24,8 +24,18 @@ public class User extends Base {
     private String password;
 
     @ManyToMany
+    @JoinTable(
+            name = "users_liked_posts",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "post_id")
+    )
     private Set<Post> likedPosts;
 
     @ManyToMany
+    @JoinTable(
+            name = "users_saved_posts",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "post_id")
+    )
     private Set<Post> savedPosts;
 }

@@ -24,6 +24,8 @@ public class PostController {
     //end point for get(get): localhost:8080/api/v1/posts/:id
     //end point for update(put): localhost:8080/api/v1/posts/:id
     //end point for delete(delete): localhost:8080/api/v1/posts/:id
+    //end point for likePost(post): localhost:8080/api/v1/posts/:id/like
+    //end point for savePost(post): localhost:8080/api/v1/posts/:id/save
 
     @PostMapping
     @AuthGuard
@@ -53,6 +55,18 @@ public class PostController {
     @DeleteMapping("{id}")
     public StatusRespDto delete(@PathVariable Long id, HttpSession session){
         return this.postService.delete(id, session);
+    }
+
+    @AuthGuard
+    @PostMapping("{id}/like")
+    public StatusRespDto like(@PathVariable Long id, HttpSession session){
+        return this.postService.like(id, session);
+    }
+
+    @AuthGuard
+    @PostMapping("{id}/save")
+    public StatusRespDto save(@PathVariable Long id, HttpSession session){
+        return this.postService.save(id, session);
     }
 
 }

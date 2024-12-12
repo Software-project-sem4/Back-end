@@ -26,9 +26,9 @@ public class Post extends Base {
     private Set<File> files = new HashSet<>();
 
     @ManyToMany(mappedBy = "likedPosts")
-    private Set<User> likedByUsers;
+    private Set<User> likedByUsers = new HashSet<>();
 
     @ManyToMany(mappedBy = "savedPosts")
-    private Set<User> savedByUsers;
+    private Set<User> savedByUsers = new HashSet<>();
 
 }

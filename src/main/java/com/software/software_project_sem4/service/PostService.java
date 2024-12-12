@@ -7,6 +7,7 @@ import com.software.software_project_sem4.model.User;
 import com.software.software_project_sem4.repository.PostRepo;
 import com.software.software_project_sem4.repository.UserRepo;
 import jakarta.servlet.http.HttpSession;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -16,6 +17,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class PostService {
     private final PostRepo postRepo;
     private final UserRepo userRepo;
@@ -119,4 +121,56 @@ public class PostService {
 
         return statusRespDto;
     }
+
+    @Transactional
+    public StatusRespDto like(Long postId, HttpSession session) {
+        Long userId = (Long) session.getAttribute("user_id");
+        Optional<User> userOpt = userRepo.findById(userId);
+        Optional<Post> postOpt = postRepo.findById(postId);
+
+        StatusRespDto statusRespDto = new StatusRespDto();
+
+        if (userOpt.isEmpty() || postOpt.isEmpty()) {
+            statusRespDto.setSuccess(false);
+            return statusRespDto;
+        }
+
+        User user = userOpt.get();
+        Post post = postOpt.get();
+
+        // Add post to user's likedPosts
+        user.getLikedPosts().add(post);
+
+        // Add user to post's likedByUsers
+        post.getLikedByUsers().add(user);
+
+        // Save the updated entities
+        userRepo.save(user);
+        postRepo.save(post);
+
+        statusRespDto.setSuccess(true);
+        return statusRespDto;
+    }
+
+
+
+    public StatusRespDto save(Long postId, HttpSession session) {
+        Long userId = (Long) session.getAttribute("user_id");
+        Optional<User> user = userRepo.findById(userId);
+        Optional<Post> post = postRepo.findById(postId);
+
+        StatusRespDto statusRespDto = new StatusRespDto();
+
+        if (user.isEmpty() || post.isEmpty()) {
+            statusRespDto.setSuccess(false);
+            return statusRespDto;
+        }
+
+        user.get().getSavedPosts().add(post.get());
+        userRepo.save(user.get());
+
+        statusRespDto.setSuccess(true);
+        return statusRespDto;
+    }
+
 }
