@@ -27,6 +27,9 @@ public class PostController {
     //end point for likePost(post): localhost:8080/api/v1/posts/:id/like
     //end point for savePost(post): localhost:8080/api/v1/posts/:id/save
 
+    //end point for create(post): localhost:8080/api/v1/posts/:postId/files
+    //end point for delete(delete): localhost:8080/api/v1/posts/:postId/files/:fileId
+
     @PostMapping
     @AuthGuard
     // TODO: add validation
@@ -69,4 +72,15 @@ public class PostController {
         return this.postService.save(id, session);
     }
 
+    @AuthGuard
+    @PostMapping("{postId}/files")
+    public StatusRespDto uploadFiles(@PathVariable Long postId, @RequestParam("files") MultipartFile[] files, HttpSession session) throws IOException {
+        return this.postService.uploadFiles(postId, files, session);
+    }
+
+    @AuthGuard
+    @DeleteMapping("{postId}/files/{fileId}")
+    public StatusRespDto deleteFile(@PathVariable Long postId, @PathVariable Long fileId, HttpSession session) {
+        return this.postService.deleteFile(postId, fileId, session);
+    }
 }

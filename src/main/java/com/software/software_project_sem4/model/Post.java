@@ -25,10 +25,10 @@ public class Post extends Base {
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     private Set<File> files = new HashSet<>();
 
-    @ManyToMany(mappedBy = "likedPosts")
+    @ManyToMany(mappedBy = "likedPosts", cascade = CascadeType.ALL)
     private Set<User> likedByUsers = new HashSet<>();
 
-    @ManyToMany(mappedBy = "savedPosts")
+    @ManyToMany(mappedBy = "savedPosts", cascade = CascadeType.ALL)
     private Set<User> savedByUsers = new HashSet<>();
 
 }

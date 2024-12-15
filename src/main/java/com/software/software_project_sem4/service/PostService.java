@@ -4,6 +4,7 @@ import com.software.software_project_sem4.dto.*;
 import com.software.software_project_sem4.model.File;
 import com.software.software_project_sem4.model.Post;
 import com.software.software_project_sem4.model.User;
+import com.software.software_project_sem4.repository.FileRepo;
 import com.software.software_project_sem4.repository.PostRepo;
 import com.software.software_project_sem4.repository.UserRepo;
 import jakarta.servlet.http.HttpSession;
@@ -21,10 +22,12 @@ import java.util.stream.Collectors;
 public class PostService {
     private final PostRepo postRepo;
     private final UserRepo userRepo;
+    private final FileRepo fileRepo;
 
-    public PostService(PostRepo postRepo, UserRepo userRepo) {
+    public PostService(PostRepo postRepo, UserRepo userRepo, FileRepo fileRepo) {
         this.postRepo = postRepo;
         this.userRepo = userRepo;
+        this.fileRepo = fileRepo;
     }
 
 
@@ -168,6 +171,70 @@ public class PostService {
 
         user.get().getSavedPosts().add(post.get());
         userRepo.save(user.get());
+
+        statusRespDto.setSuccess(true);
+        return statusRespDto;
+    }
+
+    @Transactional
+    public StatusRespDto uploadFiles(Long postId, MultipartFile[] files, HttpSession session) throws IOException {
+        Long userId = (Long) session.getAttribute("user_id");
+
+        // Retrieve the post and validate ownership
+        Optional<Post> postOpt = postRepo.findByPostIdAndUserId(postId, userId);
+        StatusRespDto statusRespDto = new StatusRespDto();
+
+        if (postOpt.isEmpty()) {
+            statusRespDto.setSuccess(false);
+            return statusRespDto;
+        }
+
+        Post post = postOpt.get();
+
+        // Process each file and associate it with the post
+        for (MultipartFile multipartFile : files) {
+            File file = new File();
+            file.setPost(post);
+            file.setFileName(multipartFile.getOriginalFilename());
+            file.setFileData(multipartFile.getBytes());
+            post.getFiles().add(file); // Add file to the post
+        }
+
+        postRepo.save(post); // Save changes to the database
+
+        statusRespDto.setSuccess(true);
+        return statusRespDto;
+    }
+
+    @Transactional
+    public StatusRespDto deleteFile(Long postId, Long fileId, HttpSession session) {
+        Long userId = (Long) session.getAttribute("user_id");
+
+        // Validate ownership
+        Optional<Post> postOpt = postRepo.findByPostIdAndUserId(postId, userId);
+        StatusRespDto statusRespDto = new StatusRespDto();
+
+        if (postOpt.isEmpty()) {
+            statusRespDto.setSuccess(false);
+            return statusRespDto;
+        }
+
+        Post post = postOpt.get();
+
+        // Find the file in the post
+        Optional<File> fileOpt = post.getFiles().stream()
+                .filter(file -> file.getId().equals(fileId))
+                .findFirst();
+
+        if (fileOpt.isEmpty()) {
+            statusRespDto.setSuccess(false);
+            return statusRespDto;
+        }
+
+        // Remove the file from the post and explicitly delete it
+        File file = fileOpt.get();
+//        post.getFiles().remove(file); // Remove from the collection
+        fileRepo.deleteById(file.getId()); // Explicitly delete the file entity
 
         statusRespDto.setSuccess(true);
         return statusRespDto;
