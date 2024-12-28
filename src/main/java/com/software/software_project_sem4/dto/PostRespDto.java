@@ -15,4 +15,5 @@ public class PostRespDto extends BaseRespDto {
     private UserRespDto user;
     private Long id;
     private Set<File> files = new HashSet<>();
+    private String avatar;
 }

@@ -22,6 +22,9 @@ public class User extends Base {
     private String userName;
     @Column(nullable = false)
     private String password;
+    @Column(unique = true, nullable = false)
+    private String avatar;
+
 
     @ManyToMany
     @JoinTable(

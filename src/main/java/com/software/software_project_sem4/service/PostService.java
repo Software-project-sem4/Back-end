@@ -231,10 +231,11 @@ public class PostService {
             return statusRespDto;
         }
 
-        // Remove the file from the post and explicitly delete it
         File file = fileOpt.get();
-//        post.getFiles().remove(file); // Remove from the collection
-        fileRepo.deleteById(file.getId()); // Explicitly delete the file entity
+
+        // Remove the file from the collection and delete it
+        post.getFiles().remove(file);
+        fileRepo.delete(file);
 
         statusRespDto.setSuccess(true);
         return statusRespDto;

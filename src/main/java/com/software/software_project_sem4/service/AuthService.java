@@ -3,6 +3,7 @@ package com.software.software_project_sem4.service;
 import com.software.software_project_sem4.dto.AuthReqDto;
 import com.software.software_project_sem4.dto.UserReqDto;
 import com.software.software_project_sem4.dto.StatusRespDto;
+import com.software.software_project_sem4.dto.UserRespDto;
 import com.software.software_project_sem4.exception.UnauthorizedException;
 import com.software.software_project_sem4.exception.ValidationException;
 import com.software.software_project_sem4.model.User;
@@ -24,7 +25,7 @@ public class AuthService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public StatusRespDto login(AuthReqDto dto, HttpServletRequest request) {
+    public UserRespDto login(AuthReqDto dto, HttpServletRequest request) {
         Optional<User> user = userRepo.findByEmail(dto.getEmail());
         boolean matched = false;
 
@@ -39,9 +40,12 @@ public class AuthService {
         HttpSession session = request.getSession();
         session.setAttribute("user_id", user.get().getId());
 
-        StatusRespDto statusRespDto = new StatusRespDto();
-        statusRespDto.setSuccess(true);
-        return statusRespDto;
+        UserRespDto userRespDto = new UserRespDto();
+        userRespDto.setEmail(user.get().getEmail());
+        userRespDto.setId(user.get().getId());
+        userRespDto.setAvatar(user.get().getAvatar());
+        userRespDto.setUserName(user.get().getUserName());
+        return userRespDto;
     }
 
     public StatusRespDto signup(UserReqDto dto) {
@@ -54,6 +58,7 @@ public class AuthService {
         user.setEmail(dto.getEmail());
         user.setUserName(dto.getUserName());
         user.setPassword(passwordHash);
+        user.setAvatar(dto.getAvatar());
 
         this.userRepo.save(user);
 

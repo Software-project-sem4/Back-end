@@ -4,6 +4,7 @@ import com.software.software_project_sem4.aspect.AuthGuard;
 import com.software.software_project_sem4.dto.AuthReqDto;
 import com.software.software_project_sem4.dto.UserReqDto;
 import com.software.software_project_sem4.dto.StatusRespDto;
+import com.software.software_project_sem4.dto.UserRespDto;
 import com.software.software_project_sem4.service.AuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -20,7 +21,7 @@ public class AuthController {
     //end point for signup(post): localhost:8080/api/v1/signup
     //end point for logout(post): localhost:8080/api/v1/logout
     @PostMapping("login")
-    public StatusRespDto login(@Valid @RequestBody AuthReqDto dto, HttpServletRequest request) {
+    public UserRespDto login(@Valid @RequestBody AuthReqDto dto, HttpServletRequest request) {
         return this.authService.login(dto, request);
     }
 

@@ -11,4 +11,5 @@ public class UserRespDto extends BaseRespDto {
     private String email;
     private String userName;
     private Long id;
+    private String avatar;
 }
