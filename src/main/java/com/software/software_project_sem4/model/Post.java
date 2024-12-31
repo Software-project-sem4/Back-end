@@ -31,4 +31,19 @@ public class Post extends Base {
     @ManyToMany(mappedBy = "savedPosts", cascade = CascadeType.ALL)
     private Set<User> savedByUsers = new HashSet<>();
 
+    public int getTotalLikes() {
+        return likedByUsers.size();
+    }
+
+    public int getTotalSaves() {
+        return savedByUsers.size();
+    }
+
+    public boolean getLikedByCurUser(User user) {
+        return likedByUsers.contains(user);
+    }
+
+    public boolean getSavedByCurUser(User user) {
+        return savedByUsers.contains(user);
+    }
 }

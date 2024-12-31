@@ -1,6 +1,7 @@
 package com.software.software_project_sem4.service;
 
 import com.software.software_project_sem4.dto.*;
+import com.software.software_project_sem4.exception.ResourceNotFoundException;
 import com.software.software_project_sem4.model.File;
 import com.software.software_project_sem4.model.Post;
 import com.software.software_project_sem4.model.User;
@@ -9,12 +10,16 @@ import com.software.software_project_sem4.repository.PostRepo;
 import com.software.software_project_sem4.repository.UserRepo;
 import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -56,22 +61,40 @@ public class PostService {
         return postRespDto;
     }
 
-    public List<PostRespDto> getList() {
+    public List<PostRespDto> getList(HttpSession session) {
+        Long userId = (Long) session.getAttribute("user_id");
+
         List<Post> posts = postRepo.findAll();
         return posts.stream().map(post -> {
             UserRespDto user = new UserRespDto();
             user.setId(post.getUser().getId());
             user.setUserName(post.getUser().getUserName());
             user.setEmail(post.getUser().getEmail());
+            user.setAvatar(post.getUser().getAvatar());
 
             PostRespDto postRespDto = new PostRespDto();
             postRespDto.setId(post.getId());
             postRespDto.setContent(post.getContent());
             postRespDto.setUser(user);
+            postRespDto.setTotalLikes(post.getTotalLikes());
+            postRespDto.setTotalSaves(post.getTotalSaves());
 
-            postRespDto.setFiles(post.getFiles());
-            postRespDto.setCreatedAt(post.getCreatedAt());
-            postRespDto.setUpdatedAt(post.getUpdatedAt());
+            if(userId != null) {
+                Optional<User> curUser = userRepo.findById(userId);
+                postRespDto.setLikedByCurrentUser(post.getLikedByCurUser(curUser.get()));
+                postRespDto.setSavedByCurrentUser(post.getSavedByCurUser(curUser.get()));
+            }
+
+            Set<PostFileRespDto> files = post.getFiles().stream().map(file -> {
+                PostFileRespDto postFileRespDto = new PostFileRespDto();
+                postFileRespDto.setFileName(file.getFileName());
+                return postFileRespDto;
+            }).collect(Collectors.toSet());
+
+            postRespDto.setFiles(files);
+
+            postRespDto.setCreatedAt(post.getCreatedAt().toString());
+            postRespDto.setUpdatedAt(post.getUpdatedAt().toString());
             return postRespDto;
         }).collect(Collectors.toList());
     }
@@ -84,9 +107,17 @@ public class PostService {
           }
           postRespDto.setId(post.get().getId());
           postRespDto.setContent(post.get().getContent());
-          postRespDto.setFiles(post.get().getFiles());
-          postRespDto.setCreatedAt(post.get().getCreatedAt());
-          postRespDto.setUpdatedAt(post.get().getUpdatedAt());
+
+        Set<PostFileRespDto> files = post.get().getFiles().stream().map(file -> {
+            PostFileRespDto postFileRespDto = new PostFileRespDto();
+            postFileRespDto.setFileName(file.getFileName());
+            return postFileRespDto;
+        }).collect(Collectors.toSet());
+
+        postRespDto.setFiles(files);
+
+          postRespDto.setCreatedAt(post.get().getCreatedAt().toString());
+          postRespDto.setUpdatedAt(post.get().getUpdatedAt().toString());
           return postRespDto;
     }
 
@@ -104,9 +135,17 @@ public class PostService {
         postRepo.saveAndFlush(post.get());
         postRespDto.setId(post.get().getId());
         postRespDto.setContent(post.get().getContent());
-        postRespDto.setFiles(post.get().getFiles());
-        postRespDto.setCreatedAt(post.get().getCreatedAt());
-        postRespDto.setUpdatedAt(post.get().getUpdatedAt());
+
+        Set<PostFileRespDto> files = post.get().getFiles().stream().map(file -> {
+            PostFileRespDto postFileRespDto = new PostFileRespDto();
+            postFileRespDto.setFileName(file.getFileName());
+            return postFileRespDto;
+        }).collect(Collectors.toSet());
+
+        postRespDto.setFiles(files);
+
+        postRespDto.setCreatedAt(post.get().getCreatedAt().toString());
+        postRespDto.setUpdatedAt(post.get().getUpdatedAt().toString());
         return postRespDto;
     }
 
@@ -126,55 +165,136 @@ public class PostService {
     }
 
     @Transactional
-    public StatusRespDto like(Long postId, HttpSession session) {
+    public LikeRespDto like(Long postId, HttpSession session) {
         Long userId = (Long) session.getAttribute("user_id");
         Optional<User> userOpt = userRepo.findById(userId);
         Optional<Post> postOpt = postRepo.findById(postId);
 
-        StatusRespDto statusRespDto = new StatusRespDto();
+        LikeRespDto likeRespDto = new LikeRespDto();
 
         if (userOpt.isEmpty() || postOpt.isEmpty()) {
-            statusRespDto.setSuccess(false);
-            return statusRespDto;
+            likeRespDto.setSuccess(false);
+            likeRespDto.setMessage("User or post not found.");
+            likeRespDto.setIsLiked(false); // Default value
+            return likeRespDto;
         }
 
         User user = userOpt.get();
         Post post = postOpt.get();
 
-        // Add post to user's likedPosts
-        user.getLikedPosts().add(post);
+        // Check if the post is already liked by the user
+        if (user.getLikedPosts().contains(post)) {
+            // Unlike the post
+            user.getLikedPosts().remove(post);
+            post.getLikedByUsers().remove(user);
 
-        // Add user to post's likedByUsers
+            // Save the updated entities
+            userRepo.save(user);
+            postRepo.save(post);
+
+            likeRespDto.setSuccess(true);
+            likeRespDto.setMessage("Post unliked successfully.");
+            likeRespDto.setIsLiked(false); // Post is no longer liked
+            return likeRespDto;
+        }
+
+        // Like the post
+        user.getLikedPosts().add(post);
         post.getLikedByUsers().add(user);
 
         // Save the updated entities
         userRepo.save(user);
         postRepo.save(post);
 
-        statusRespDto.setSuccess(true);
-        return statusRespDto;
+        likeRespDto.setSuccess(true);
+        likeRespDto.setMessage("Post liked successfully.");
+        likeRespDto.setIsLiked(true); // Post is now liked
+        return likeRespDto;
     }
 
 
 
-    public StatusRespDto save(Long postId, HttpSession session) {
-        Long userId = (Long) session.getAttribute("user_id");
-        Optional<User> user = userRepo.findById(userId);
-        Optional<Post> post = postRepo.findById(postId);
+    public LikesCountRespDto getLikesCount(Long postId) {
+        Optional<Post> postOpt = postRepo.findById(postId);
+        LikesCountRespDto likesCountRespDto = new LikesCountRespDto();
 
-        StatusRespDto statusRespDto = new StatusRespDto();
-
-        if (user.isEmpty() || post.isEmpty()) {
-            statusRespDto.setSuccess(false);
-            return statusRespDto;
+        if (postOpt.isEmpty()) {
+            likesCountRespDto.setSuccess(false);
+            likesCountRespDto.setLikesCount(0);
+            likesCountRespDto.setMessage("Post not found.");
+            return likesCountRespDto;
         }
 
-        user.get().getSavedPosts().add(post.get());
-        userRepo.save(user.get());
+        Post post = postOpt.get();
+        int likesCount = post.getLikedByUsers().size();
 
-        statusRespDto.setSuccess(true);
-        return statusRespDto;
+        likesCountRespDto.setSuccess(true);
+        likesCountRespDto.setLikesCount(likesCount);
+        likesCountRespDto.setMessage("Likes count retrieved successfully.");
+
+        return likesCountRespDto;
     }
+
+
+    public SaveRespDto save(Long postId, HttpSession session) {
+        Long userId = (Long) session.getAttribute("user_id");
+        Optional<User> userOpt = userRepo.findById(userId);
+        Optional<Post> postOpt = postRepo.findById(postId);
+
+        SaveRespDto saveRespDto = new SaveRespDto();
+
+        if (userOpt.isEmpty() || postOpt.isEmpty()) {
+            saveRespDto.setSuccess(false);
+            saveRespDto.setMessage("User or post not found.");
+            saveRespDto.setIsSaved(false);
+            return saveRespDto;
+        }
+
+        User user = userOpt.get();
+        Post post = postOpt.get();
+
+        // Check if the post is already saved by the user
+        if (user.getSavedPosts().contains(post)) {
+            // Unsave the post
+            user.getSavedPosts().remove(post);
+            userRepo.save(user);
+
+            saveRespDto.setSuccess(true);
+            saveRespDto.setMessage("Post unsaved successfully.");
+            saveRespDto.setIsSaved(false);
+            return saveRespDto;
+        }
+
+        // Save the post
+        user.getSavedPosts().add(post);
+        userRepo.save(user);
+
+        saveRespDto.setSuccess(true);
+        saveRespDto.setMessage("Post saved successfully.");
+        saveRespDto.setIsSaved(true);
+        return saveRespDto;
+    }
+
+    public SaveCountRespDto getSaveCount(Long postId) {
+        Optional<Post> postOpt = postRepo.findById(postId);
+        SaveCountRespDto saveCountRespDto = new SaveCountRespDto();
+
+        if (postOpt.isEmpty()) {
+            saveCountRespDto.setSuccess(false);
+            saveCountRespDto.setSaveCount(0);
+            saveCountRespDto.setMessage("Post not found.");
+            return saveCountRespDto;
+        }
+
+        Post post = postOpt.get();
+        int saveCount = post.getSavedByUsers().size();
+
+        saveCountRespDto.setSuccess(true);
+        saveCountRespDto.setSaveCount(saveCount);
+        saveCountRespDto.setMessage("Save count retrieved successfully.");
+        return saveCountRespDto;
+    }
+
 
     @Transactional
     public StatusRespDto uploadFiles(Long postId, MultipartFile[] files, HttpSession session) throws IOException {
@@ -205,6 +325,37 @@ public class PostService {
         statusRespDto.setSuccess(true);
         return statusRespDto;
     }
+
+    public ResponseEntity<byte[]> downloadFile(Long postId, Long fileId, HttpSession session) {
+        Long userId = (Long) session.getAttribute("user_id");
+
+        // Validate ownership or access to the post
+        Optional<Post> postOpt = postRepo.findByPostIdAndUserId(postId, userId);
+        if (postOpt.isEmpty()) {
+            throw new ResourceNotFoundException("Post not found or access denied.");
+        }
+
+        Post post = postOpt.get();
+
+        // Find the requested file in the post
+        Optional<File> fileOpt = post.getFiles().stream()
+                .filter(file -> file.getId().equals(fileId))
+                .findFirst();
+
+        if (fileOpt.isEmpty()) {
+            throw new ResourceNotFoundException("File not found.");
+        }
+
+        File file = fileOpt.get();
+
+        // Build the response
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getFileName() + "\"")
+                .contentType(MediaType.APPLICATION_OCTET_STREAM)
+                .body(file.getFileData());
+    }
+
+
 
     @Transactional
     public StatusRespDto deleteFile(Long postId, Long fileId, HttpSession session) {

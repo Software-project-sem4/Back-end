@@ -5,6 +5,7 @@ import com.software.software_project_sem4.dto.*;
 import com.software.software_project_sem4.service.PostService;
 import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -38,8 +39,8 @@ public class PostController {
     }
 
     @GetMapping
-    public List<PostRespDto> getList(){
-        return this.postService.getList();
+    public List<PostRespDto> getList(HttpSession session){
+        return this.postService.getList(session);
     }
 
 
@@ -62,13 +63,13 @@ public class PostController {
 
     @AuthGuard
     @PostMapping("{id}/like")
-    public StatusRespDto like(@PathVariable Long id, HttpSession session){
+    public LikeRespDto like(@PathVariable Long id, HttpSession session){
         return this.postService.like(id, session);
     }
 
     @AuthGuard
     @PostMapping("{id}/save")
-    public StatusRespDto save(@PathVariable Long id, HttpSession session){
+    public SaveRespDto save(@PathVariable Long id, HttpSession session){
         return this.postService.save(id, session);
     }
 
@@ -79,8 +80,31 @@ public class PostController {
     }
 
     @AuthGuard
+    @GetMapping("{postId}/files/{fileId}/download")
+    public ResponseEntity<byte[]> downloadFile(@PathVariable Long postId, @PathVariable Long fileId, HttpSession session) {
+        return postService.downloadFile(postId, fileId, session);
+    }
+
+
+
+    @AuthGuard
     @DeleteMapping("{postId}/files/{fileId}")
     public StatusRespDto deleteFile(@PathVariable Long postId, @PathVariable Long fileId, HttpSession session) {
         return this.postService.deleteFile(postId, fileId, session);
     }
+
+    @AuthGuard
+    @GetMapping("{id}/likes-count")
+    public LikesCountRespDto getLikesCount(@PathVariable Long id) {
+        System.out.println("Received request for likes count, Post ID: " + id);
+        return this.postService.getLikesCount(id);
+    }
+
+    @AuthGuard
+    @GetMapping("{id}/save-count")
+    public SaveCountRespDto getSaveCount(@PathVariable Long id) {
+        System.out.println("Received request for save count, Post ID: " + id);
+        return this.postService.getSaveCount(id);
+    }
+
 }

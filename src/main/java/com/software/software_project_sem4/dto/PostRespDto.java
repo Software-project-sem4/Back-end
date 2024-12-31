@@ -14,6 +14,9 @@ public class PostRespDto extends BaseRespDto {
     private String content;
     private UserRespDto user;
     private Long id;
-    private Set<File> files = new HashSet<>();
-    private String avatar;
+    private int totalLikes;
+    private int totalSaves;
+    private boolean likedByCurrentUser;
+    private boolean savedByCurrentUser;
+    private Set<PostFileRespDto> files = new HashSet<>();
 }

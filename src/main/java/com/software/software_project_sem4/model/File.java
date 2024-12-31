@@ -22,3 +22,4 @@ public class File extends Base {
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
 }
+
