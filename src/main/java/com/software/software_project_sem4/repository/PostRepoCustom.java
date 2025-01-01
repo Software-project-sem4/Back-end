@@ -8,6 +8,7 @@ import java.util.Optional;
 public interface PostRepoCustom {
     @Transactional
     int deleteByPostIdAndUserId(Long postId, Long userId);
-
+    @Transactional
+    int deleteByPostIdAndUserIdRaw(Long postId, Long userId);
     Optional<Post> findByPostIdAndUserId(Long postId, Long userId);
 }

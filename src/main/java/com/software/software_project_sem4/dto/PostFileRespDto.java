@@ -9,5 +9,5 @@ import lombok.*;
 @AllArgsConstructor
 public class PostFileRespDto {
     private String fileName;
-
+    private Long id;
 }

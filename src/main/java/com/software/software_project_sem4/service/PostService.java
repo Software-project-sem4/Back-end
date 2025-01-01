@@ -35,7 +35,6 @@ public class PostService {
         this.fileRepo = fileRepo;
     }
 
-
     public StatusRespDto create(String content, MultipartFile[] files, HttpSession session) throws IOException {
         Long userId = (Long) session.getAttribute("user_id");
         Optional<User> user = userRepo.findById(userId);
@@ -88,6 +87,7 @@ public class PostService {
             Set<PostFileRespDto> files = post.getFiles().stream().map(file -> {
                 PostFileRespDto postFileRespDto = new PostFileRespDto();
                 postFileRespDto.setFileName(file.getFileName());
+                postFileRespDto.setId(file.getId());
                 return postFileRespDto;
             }).collect(Collectors.toSet());
 
@@ -152,7 +152,7 @@ public class PostService {
     public StatusRespDto delete(Long postId, HttpSession session) {
         Long userId = (Long) session.getAttribute("user_id");
 
-        int rows = postRepo.deleteByPostIdAndUserId(postId, userId);
+        int rows = postRepo.deleteByPostIdAndUserIdRaw(postId, userId);
 
         StatusRespDto statusRespDto = new StatusRespDto();
         statusRespDto.setSuccess(true);
