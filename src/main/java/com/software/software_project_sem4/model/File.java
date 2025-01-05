@@ -21,5 +21,11 @@ public class File extends Base {
     @ManyToOne
     @JoinColumn(name = "post_id", nullable = false)
     private Post post;
+
+    // FIXME: fix this work around sollution
+//    @Override
+//    public boolean equals(Object o){
+//        return false;
+//    }
 }
 

@@ -5,7 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.modelmapper.internal.util.Lists;
 
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -33,6 +35,22 @@ public class User extends Base {
             inverseJoinColumns = @JoinColumn(name = "post_id")
     )
     private Set<Post> likedPosts;
+
+    @ManyToMany
+    @JoinTable(
+            name = "users_liked_comments",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "comment_id")
+    )
+    private List<Comment> likedComments;
+
+    @ManyToMany
+    @JoinTable(
+            name = "users_liked_replies",
+            joinColumns = @JoinColumn(name = "user_id"),
+            inverseJoinColumns = @JoinColumn(name = "reply_id")
+    )
+    private List<Reply> likedReplies;
 
     @ManyToMany
     @JoinTable(

@@ -6,7 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
@@ -23,13 +25,16 @@ public class Post extends Base {
     private User user;
 
     @OneToMany(mappedBy = "post", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    private Set<File> files = new HashSet<>();
+    private List<File> files = new ArrayList<>();
 
     @ManyToMany(mappedBy = "likedPosts", cascade = CascadeType.ALL)
     private Set<User> likedByUsers = new HashSet<>();
 
     @ManyToMany(mappedBy = "savedPosts", cascade = CascadeType.ALL)
     private Set<User> savedByUsers = new HashSet<>();
+
+    @OneToMany(mappedBy = "post", cascade = CascadeType.ALL)
+    private List<Comment> comments = new ArrayList<>();
 
     public int getTotalLikes() {
         return likedByUsers.size();

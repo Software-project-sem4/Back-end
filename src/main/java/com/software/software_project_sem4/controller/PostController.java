@@ -11,6 +11,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("api/v1/posts")
@@ -39,8 +40,8 @@ public class PostController {
     }
 
     @GetMapping
-    public List<PostRespDto> getList(HttpSession session){
-        return this.postService.getList(session);
+    public List<PostRespDto> getList(HttpSession session, @RequestParam("savedByUser") Optional<Boolean> savedByUser) {
+        return this.postService.getList(session, savedByUser);
     }
 
 

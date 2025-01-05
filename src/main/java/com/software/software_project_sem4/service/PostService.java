@@ -17,9 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -60,10 +58,15 @@ public class PostService {
         return postRespDto;
     }
 
-    public List<PostRespDto> getList(HttpSession session) {
+    public List<PostRespDto> getList(HttpSession session, Optional<Boolean> savedByUser) {
         Long userId = (Long) session.getAttribute("user_id");
-
-        List<Post> posts = postRepo.findAll();
+        List<Post> posts;
+        if (savedByUser.isEmpty()) {
+            posts = postRepo.findAll();
+        } else {
+            Optional<User> curUser = userRepo.findById(userId);
+            posts = curUser.get().getSavedPosts().stream().toList();
+        }
         return posts.stream().map(post -> {
             UserRespDto user = new UserRespDto();
             user.setId(post.getUser().getId());
@@ -77,6 +80,7 @@ public class PostService {
             postRespDto.setUser(user);
             postRespDto.setTotalLikes(post.getTotalLikes());
             postRespDto.setTotalSaves(post.getTotalSaves());
+
 
             if(userId != null) {
                 Optional<User> curUser = userRepo.findById(userId);
@@ -327,12 +331,10 @@ public class PostService {
     }
 
     public ResponseEntity<byte[]> downloadFile(Long postId, Long fileId, HttpSession session) {
-        Long userId = (Long) session.getAttribute("user_id");
-
-        // Validate ownership or access to the post
-        Optional<Post> postOpt = postRepo.findByPostIdAndUserId(postId, userId);
+        // Validate that the post exists
+        Optional<Post> postOpt = postRepo.findById(postId);
         if (postOpt.isEmpty()) {
-            throw new ResourceNotFoundException("Post not found or access denied.");
+            throw new ResourceNotFoundException("Post not found.");
         }
 
         Post post = postOpt.get();
@@ -354,6 +356,7 @@ public class PostService {
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(file.getFileData());
     }
+
 
 
 
