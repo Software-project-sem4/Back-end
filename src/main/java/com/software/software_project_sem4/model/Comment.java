@@ -15,6 +15,9 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Comment extends Base {
+    @Column(nullable = false)
+    private String commentContent;
+
     @ManyToMany(mappedBy = "likedComments", cascade = CascadeType.ALL)
     private List<User> likedByUsers = new ArrayList<>();
 
