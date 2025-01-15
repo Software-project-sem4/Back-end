@@ -8,12 +8,13 @@ import java.util.List;
 @Data
 public class CommentRespDto {
     private Long id;
+    private UserRespDto user;
     private String commentContent;
     private int likesCount;
     private int repliesCount;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-
+    private String createdAt;
+    private String updatedAt;
+    private boolean likedByCurrentUser;
     // Nested replies if needed
     private List<CommentRespDto> replies;
 }

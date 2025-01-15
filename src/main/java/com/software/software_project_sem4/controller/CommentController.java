@@ -1,8 +1,6 @@
 package com.software.software_project_sem4.controller;
 
-import com.software.software_project_sem4.dto.CommentRespDto;
-import com.software.software_project_sem4.dto.LikeRespDto;
-import com.software.software_project_sem4.dto.StatusRespDto;
+import com.software.software_project_sem4.dto.*;
 import com.software.software_project_sem4.service.CommentService;
 import jakarta.servlet.http.HttpSession;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("api/v1/comments")
+    @RequestMapping("api/v1/posts/{postId}/comments")
 public class CommentController {
 
     private final CommentService commentService;
@@ -20,20 +18,20 @@ public class CommentController {
         this.commentService = commentService;
     }
 
-    @PostMapping("/{postId}")
+    @PostMapping
     public ResponseEntity<StatusRespDto> addComment(
             @PathVariable Long postId,
-            @RequestParam String content,
+            @RequestBody CommentReqDto requestDto,
             HttpSession session) {
-        return ResponseEntity.ok(commentService.addComment(postId, content, session));
+        return ResponseEntity.ok(commentService.addComment(postId, requestDto, session));
     }
 
     @PostMapping("/{commentId}/reply")
     public ResponseEntity<StatusRespDto> addReply(
             @PathVariable Long commentId,
-            @RequestParam String content,
+            @RequestBody ReplyReqDto requestDto,
             HttpSession session) {
-        return ResponseEntity.ok(commentService.addReply(commentId, content, session));
+        return ResponseEntity.ok(commentService.addReply(commentId, requestDto, session));
     }
 
     @PostMapping("/{commentId}/like")
@@ -43,10 +41,11 @@ public class CommentController {
         return ResponseEntity.ok(commentService.likeComment(commentId, session));
     }
 
-    @GetMapping("/{postId}")
+    @GetMapping
     public ResponseEntity<List<CommentRespDto>> getCommentsForPost(
-            @PathVariable Long postId) {
-        return ResponseEntity.ok(commentService.getCommentsForPost(postId));
+            @PathVariable Long postId,
+            HttpSession session) {
+        return ResponseEntity.ok(commentService.getCommentsForPost(postId, session));
     }
 
     @DeleteMapping("/{commentId}")

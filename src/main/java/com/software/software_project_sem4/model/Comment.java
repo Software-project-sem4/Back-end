@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,20 +17,24 @@ import java.util.List;
 @NoArgsConstructor
 @AllArgsConstructor
 public class Comment extends Base {
+
     @Column(nullable = false)
     private String commentContent;
 
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @ManyToMany(mappedBy = "likedComments", cascade = CascadeType.ALL)
-    private List<User> likedByUsers = new ArrayList<>();
+    private List<User> likedByUsers = new ArrayList<>(); // Users who liked this comment
 
-    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    private List<Reply> replies = new ArrayList<>();
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    @OneToMany(mappedBy = "comment", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Reply> replies = new ArrayList<>(); // Replies to this comment
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "post_id", nullable = false)
-    private Post post;
+    private Post post; // The post this comment belongs to
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    private User user; // The user who created this comment
 }
+

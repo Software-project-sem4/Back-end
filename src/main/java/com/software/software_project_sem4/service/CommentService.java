@@ -1,14 +1,14 @@
 package com.software.software_project_sem4.service;
 
-import com.software.software_project_sem4.dto.CommentRespDto;
-import com.software.software_project_sem4.dto.LikeRespDto;
-import com.software.software_project_sem4.dto.StatusRespDto;
+import com.software.software_project_sem4.dto.*;
 import com.software.software_project_sem4.exception.ResourceNotFoundException;
 import com.software.software_project_sem4.model.Comment;
 import com.software.software_project_sem4.model.Post;
+import com.software.software_project_sem4.model.Reply;
 import com.software.software_project_sem4.model.User;
 import com.software.software_project_sem4.repository.CommentRepo;
 import com.software.software_project_sem4.repository.PostRepo;
+import com.software.software_project_sem4.repository.ReplyRepo;
 import com.software.software_project_sem4.repository.UserRepo;
 import jakarta.servlet.http.HttpSession;
 import jakarta.transaction.Transactional;
@@ -25,14 +25,16 @@ public class CommentService {
     private final CommentRepo commentRepo;
     private final PostRepo postRepo;
     private final UserRepo userRepo;
+    private final ReplyRepo replyRepo;
 
-    public CommentService(CommentRepo commentRepo, PostRepo postRepo, UserRepo userRepo) {
+    public CommentService(CommentRepo commentRepo, PostRepo postRepo, UserRepo userRepo, ReplyRepo replyRepo) {
         this.commentRepo = commentRepo;
         this.postRepo = postRepo;
         this.userRepo = userRepo;
+        this.replyRepo = replyRepo;
     }
 
-    public StatusRespDto addComment(Long postId, String content, HttpSession session) {
+    public StatusRespDto addComment(Long postId, CommentReqDto requestDto, HttpSession session) {
         Long userId = (Long) session.getAttribute("user_id");
         Optional<User> userOpt = userRepo.findById(userId);
         Optional<Post> postOpt = postRepo.findById(postId);
@@ -45,7 +47,7 @@ public class CommentService {
         Post post = postOpt.get();
 
         Comment comment = new Comment();
-        comment.setCommentContent(content);
+        comment.setCommentContent(requestDto.getContent());
         comment.setUser(user);
         comment.setPost(post);
 
@@ -54,7 +56,7 @@ public class CommentService {
         return new StatusRespDto(true);
     }
 
-    public StatusRespDto addReply(Long commentId, String content, HttpSession session) {
+    public StatusRespDto addReply(Long commentId, ReplyReqDto requestDto, HttpSession session) {
         Long userId = (Long) session.getAttribute("user_id");
         Optional<User> userOpt = userRepo.findById(userId);
         Optional<Comment> commentOpt = commentRepo.findById(commentId);
@@ -66,16 +68,28 @@ public class CommentService {
         User user = userOpt.get();
         Comment parentComment = commentOpt.get();
 
-        Comment reply = new Comment();
-        reply.setCommentContent(content);
+        // Create a new reply
+        Reply reply = new Reply();
+        reply.setComment(parentComment);
         reply.setUser(user);
-        reply.setPost(parentComment.getPost());
-        reply.setReplies(parentComment.getReplies());
+        reply.setReplyContent(requestDto.getContent());
 
-        commentRepo.save(reply);
+        // If replying to another reply, set the parent reply
+        if (requestDto.getParentReplyId() != null) {
+            Optional<Reply> parentReplyOpt = replyRepo.findById(requestDto.getParentReplyId());
+            if (parentReplyOpt.isPresent()) {
+                reply.setParentReply(parentReplyOpt.get());
+            } else {
+                throw new ResourceNotFoundException("Parent reply not found.");
+            }
+        }
+
+        // Save the reply
+        replyRepo.save(reply);
 
         return new StatusRespDto(true);
     }
+
 
     public LikeRespDto likeComment(Long commentId, HttpSession session) {
         Long userId = (Long) session.getAttribute("user_id");
@@ -91,38 +105,59 @@ public class CommentService {
 
         if (comment.getLikedByUsers().contains(user)) {
             comment.getLikedByUsers().remove(user);
+            user.getLikedComments().remove(comment);
             commentRepo.save(comment);
+            userRepo.save(user);
             return new LikeRespDto(true, "Comment unliked", false);
         }
 
         comment.getLikedByUsers().add(user);
+        user.getLikedComments().add(comment);
+        userRepo.save(user);
         commentRepo.save(comment);
 
         return new LikeRespDto(true, "Comment liked", true);
     }
 
 
-    public List<CommentRespDto> getCommentsForPost(Long postId) {
+    public List<CommentRespDto> getCommentsForPost(Long postId, HttpSession session) {
+        Long userId = (Long) session.getAttribute("user_id"); // Get user ID from session
         List<Comment> comments = commentRepo.findByPostId(postId);
 
         return comments.stream().map(comment -> {
             CommentRespDto dto = new CommentRespDto();
+            UserRespDto userDto = new UserRespDto();
+            userDto.setId(comment.getUser().getId());
+            userDto.setAvatar(comment.getUser().getAvatar());
+            userDto.setUserName(comment.getUser().getUserName());
             dto.setId(comment.getId());
+            dto.setUser(userDto);
             dto.setCommentContent(comment.getCommentContent());
             dto.setLikesCount(comment.getLikedByUsers().size());
             dto.setRepliesCount(comment.getReplies().size());
-            dto.setCreatedAt(comment.getCreatedAt());
-            dto.setUpdatedAt(comment.getUpdatedAt());
+            dto.setCreatedAt(comment.getCreatedAt().toString());
+            dto.setUpdatedAt(comment.getUpdatedAt().toString());
+
+            // Check if the current user has liked this comment
+            dto.setLikedByCurrentUser(
+                    comment.getLikedByUsers().stream().anyMatch(user -> user.getId().equals(userId))
+            );
 
             // Map nested replies if needed
             dto.setReplies(comment.getReplies().stream().map(reply -> {
                 CommentRespDto replyDto = new CommentRespDto();
                 replyDto.setId(reply.getId());
-                replyDto.setCommentContent(reply.getComment().getCommentContent());
+                replyDto.setCommentContent(reply.getReplyContent());
                 replyDto.setLikesCount(reply.getLikedByUsers().size());
-                replyDto.setRepliesCount(reply.getReplies().size());
-                replyDto.setCreatedAt(reply.getCreatedAt());
-                replyDto.setUpdatedAt(reply.getUpdatedAt());
+                replyDto.setRepliesCount(reply.getChildReplies().size());
+                replyDto.setCreatedAt(reply.getCreatedAt().toString());
+                replyDto.setUpdatedAt(reply.getUpdatedAt().toString());
+
+                // Check if the current user has liked this reply
+                replyDto.setLikedByCurrentUser(
+                        reply.getLikedByUsers().stream().anyMatch(user -> user.getId().equals(userId))
+                );
+
                 return replyDto;
             }).collect(Collectors.toList()));
 
