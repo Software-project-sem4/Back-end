@@ -124,6 +124,8 @@ public class CommentService {
         Long userId = (Long) session.getAttribute("user_id"); // Get user ID from session
         List<Comment> comments = commentRepo.findByPostId(postId);
 
+        int totalCommentsCount = comments.size(); // Calculate the total number of comments
+
         return comments.stream().map(comment -> {
             CommentRespDto dto = new CommentRespDto();
             UserRespDto userDto = new UserRespDto();
@@ -143,13 +145,22 @@ public class CommentService {
                     comment.getLikedByUsers().stream().anyMatch(user -> user.getId().equals(userId))
             );
 
+            // Include the total comments count in the DTO
+            dto.setCommentsCount(totalCommentsCount);
+
             // Map nested replies if needed
             dto.setReplies(comment.getReplies().stream().map(reply -> {
-                CommentRespDto replyDto = new CommentRespDto();
+                UserRespDto userReplyDto = new UserRespDto();
+                userReplyDto.setId(reply.getUser().getId());
+                userReplyDto.setAvatar(reply.getUser().getAvatar());
+                userReplyDto.setUserName(reply.getUser().getUserName());
+                ReplyRespDto replyDto = new ReplyRespDto();
                 replyDto.setId(reply.getId());
-                replyDto.setCommentContent(reply.getReplyContent());
-                replyDto.setLikesCount(reply.getLikedByUsers().size());
-                replyDto.setRepliesCount(reply.getChildReplies().size());
+                replyDto.setReplyContent(reply.getReplyContent());
+                replyDto.setLikedByUsers(reply.getLikedByUsers());
+//                replyDto.setRepliesCount(reply.getChildReplies().size());
+                replyDto.setPostId(reply.getComment().getPost().getId());
+                replyDto.setUser(userReplyDto);
                 replyDto.setCreatedAt(reply.getCreatedAt().toString());
                 replyDto.setUpdatedAt(reply.getUpdatedAt().toString());
 
@@ -164,6 +175,7 @@ public class CommentService {
             return dto;
         }).collect(Collectors.toList());
     }
+
 
 
     public StatusRespDto deleteComment(Long commentId, HttpSession session) {
@@ -181,6 +193,25 @@ public class CommentService {
         }
 
         commentRepo.delete(comment);
+        return new StatusRespDto(true);
+    }
+
+    public StatusRespDto deleteReply(Long replyId, HttpSession session) {
+        Long userId = (Long) session.getAttribute("user_id");
+        Optional<Reply> replyOpt = replyRepo.findById(replyId);
+
+        if (replyOpt.isEmpty()) {
+            throw new ResourceNotFoundException("Reply not found.");
+        }
+
+        Reply reply = replyOpt.get();
+
+        // Check if the logged-in user is the owner of the reply
+        if (!reply.getUser().getId().equals(userId)) {
+            return new StatusRespDto(false);
+        }
+
+        replyRepo.delete(reply);
         return new StatusRespDto(true);
     }
 }

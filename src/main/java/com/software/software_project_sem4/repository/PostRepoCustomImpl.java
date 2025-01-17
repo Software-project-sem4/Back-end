@@ -32,7 +32,7 @@ public class PostRepoCustomImpl implements PostRepoCustom {
             return 0;
         }
 
-        // Delete files related to the post
+        // Delete Post
         String filesql = "DELETE FROM Post f WHERE f.id = :postId";
         Query fileQuery = entityManager.createQuery(filesql);
         fileQuery.setParameter("postId", postId);

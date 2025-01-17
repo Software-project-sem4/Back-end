@@ -12,9 +12,9 @@ public class CommentRespDto {
     private String commentContent;
     private int likesCount;
     private int repliesCount;
+    private int commentsCount;
     private String createdAt;
     private String updatedAt;
     private boolean likedByCurrentUser;
-    // Nested replies if needed
-    private List<CommentRespDto> replies;
+    private List<ReplyRespDto> replies;
 }
