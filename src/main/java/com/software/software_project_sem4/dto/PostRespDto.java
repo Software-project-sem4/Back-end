@@ -18,5 +18,6 @@ public class PostRespDto extends BaseRespDto {
     private int totalSaves;
     private boolean likedByCurrentUser;
     private boolean savedByCurrentUser;
+    private int totalCommentsReplies;
     private Set<PostFileRespDto> files = new HashSet<>();
 }

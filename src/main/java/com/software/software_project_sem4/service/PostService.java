@@ -68,11 +68,21 @@ public class PostService {
             posts = curUser.get().getSavedPosts().stream().toList();
         }
         return posts.stream().map(post -> {
+            int total = post.getComments().stream()
+                    .mapToInt(comment -> 1 + comment.getReplies().size())
+                    .sum();
             UserRespDto user = new UserRespDto();
             user.setId(post.getUser().getId());
             user.setUserName(post.getUser().getUserName());
             user.setEmail(post.getUser().getEmail());
             user.setAvatar(post.getUser().getAvatar());
+
+//            const total = comments.reduce(
+//                    (count, comment) =>
+//            count + 1 + (comment.replies ? comment.replies.length : 0),
+//                    0
+//             );
+
 
             PostRespDto postRespDto = new PostRespDto();
             postRespDto.setId(post.getId());
@@ -80,7 +90,7 @@ public class PostService {
             postRespDto.setUser(user);
             postRespDto.setTotalLikes(post.getTotalLikes());
             postRespDto.setTotalSaves(post.getTotalSaves());
-
+            postRespDto.setTotalCommentsReplies(total);
 
             if(userId != null) {
                 Optional<User> curUser = userRepo.findById(userId);
