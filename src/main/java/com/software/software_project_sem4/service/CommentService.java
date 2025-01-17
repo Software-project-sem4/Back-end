@@ -180,20 +180,17 @@ public class CommentService {
 
     public StatusRespDto deleteComment(Long commentId, HttpSession session) {
         Long userId = (Long) session.getAttribute("user_id");
-        Optional<Comment> commentOpt = commentRepo.findById(commentId);
 
-        if (commentOpt.isEmpty()) {
-            throw new ResourceNotFoundException("Comment not found.");
+        int rows = commentRepo.deleteByCommentIdAndUserIdRaw(commentId, userId);
+
+        StatusRespDto statusRespDto = new StatusRespDto();
+        statusRespDto.setSuccess(true);
+
+        if(rows < 1){
+            statusRespDto.setSuccess(false);
         }
 
-        Comment comment = commentOpt.get();
-
-        if (!comment.getUser().getId().equals(userId)) {
-            return new StatusRespDto(false);
-        }
-
-        commentRepo.delete(comment);
-        return new StatusRespDto(true);
+        return statusRespDto;
     }
 
     public StatusRespDto deleteReply(Long replyId, HttpSession session) {
